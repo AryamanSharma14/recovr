@@ -16,7 +16,6 @@ import { QueryBoundary } from '../components/common/states'
 import { DisclaimerNote } from '../components/common/badges'
 import { SpotlightCard } from '../components/reactbits/SpotlightCard'
 import { AnimatedCounter } from '../components/reactbits/AnimatedCounter'
-import { ExecutiveBoardModal } from '../components/common/ExecutiveBoardModal'
 import type { ChannelSpendDetail } from '../lib/types'
 import { useDateRange } from '../lib/dateRange'
 import { TimeFilter } from '../components/common/TimeFilter'
@@ -24,7 +23,6 @@ import { TimeFilter } from '../components/common/TimeFilter'
 export default function Economics() {
   const [gmv, setGmv] = useState(5_000_000)
   const [rate, setRate] = useState(2.0)
-  const [isExecutiveModalOpen, setIsExecutiveModalOpen] = useState(false)
   const { fromDate, toDate, rangeKey } = useDateRange()
 
   const cost = useQuery({ queryKey: qk.costAnalysis(rangeKey), queryFn: () => api.costAnalysis(fromDate, toDate) })
@@ -41,10 +39,10 @@ export default function Economics() {
             <TimeFilter showLabel={false} />
             <Button
               variant="default"
-              onClick={() => setIsExecutiveModalOpen(true)}
+              onClick={() => window.print()}
             >
               <FileText className="h-3.5 w-3.5" />
-              <span>Executive Board Brief</span>
+              <span>Print Financial Summary</span>
             </Button>
           </div>
         }
@@ -282,11 +280,6 @@ export default function Economics() {
           )}
         </QueryBoundary>
       </div>
-
-      <ExecutiveBoardModal
-        isOpen={isExecutiveModalOpen}
-        onClose={() => setIsExecutiveModalOpen(false)}
-      />
     </div>
   )
 }

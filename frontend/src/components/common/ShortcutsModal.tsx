@@ -6,11 +6,9 @@ interface ShortcutsModalProps {
 }
 
 const SHORTCUTS = [
-  { key: 'P', desc: 'Toggle Presenter Mode (floating demo scenario bar)' },
-  { key: 'T', desc: 'Toggle Live AI Agent Reasoning Terminal' },
-  { key: 'C', desc: 'Open Interactive Customer Phone & WhatsApp Simulator' },
-  { key: 'D', desc: 'Go to Scenario Simulator' },
-  { key: 'R', desc: 'Reset all demo data (with confirmation)' },
+  { key: 'T', desc: 'Toggle Real-Time Telemetry Stream' },
+  { key: 'W', desc: 'Navigate to Event Workbench' },
+  { key: 'R', desc: 'Reset Sandbox Data (with confirmation)' },
   { key: '?', desc: 'Show keyboard shortcuts' },
   { key: 'Esc', desc: 'Close dialogs, drawers, and overlays' },
 ]
@@ -20,7 +18,7 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
     <Modal isOpen={isOpen} onClose={onClose} title="Keyboard Shortcuts">
       <div className="space-y-3">
         <p className="text-[13px] text-text-muted">
-          Use these shortcuts to navigate and control the recovery agent during live demos.
+          Use these shortcuts to navigate the recovr operations console.
         </p>
         <div className="divide-y divide-border/60 rounded-md border border-border bg-surface p-3">
           {SHORTCUTS.map((s) => (

@@ -45,7 +45,7 @@ describe('sound engine', () => {
     }
 
     // @ts-expect-error test mock
-    window.AudioContext = vi.fn(() => mockCtx)
+    window.AudioContext = vi.fn(function () { return mockCtx })
 
     expect(() => sound.click()).not.toThrow()
     expect(() => sound.chime()).not.toThrow()

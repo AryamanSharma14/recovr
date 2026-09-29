@@ -113,7 +113,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-copper shrink-0" />
             <span>
-              Viewing <strong className="text-paper">Today's Live Session</strong> (no failures recorded yet today). Press <kbd className="rounded bg-carbon px-1.5 py-0.5 font-mono text-paper">P</kbd> for <strong>Demo Controller</strong> or switch to <button type="button" onClick={() => setPreset('7d')} className="text-copper underline font-semibold hover:text-paper cursor-pointer">7D (Baseline)</button> to inspect the 48h merchant ledger.
+              Viewing <strong className="text-paper">Today's Live Session</strong> (no failures recorded yet today). Switch to <button type="button" onClick={() => setPreset('7d')} className="text-copper underline font-semibold hover:text-paper cursor-pointer">7D (Baseline)</button> to inspect the merchant ledger or dispatch test webhooks via the <a href="/workbench" className="text-copper underline font-semibold hover:text-paper">Event Workbench</a>.
             </span>
           </div>
         </div>

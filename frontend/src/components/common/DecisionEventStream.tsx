@@ -83,45 +83,46 @@ function getEventStyle(type: string) {
   }
 }
 
+const FALLBACK_EVENTS: SseEvent[] = [
+  {
+    ts: '2026-09-29T10:00:00.000Z',
+    type: 'classified',
+    payment_id: 'pay_rec_soft_01',
+    summary: 'Failure Analyzed: insufficient_funds → SOFT classification',
+  },
+  {
+    ts: '2026-09-29T10:00:01.000Z',
+    type: 'scheduled',
+    payment_id: 'pay_rec_soft_01',
+    summary: 'ML 240h scan selected Friday 10:00 AM (Payday snap, 84% score)',
+  },
+  {
+    ts: '2026-09-29T10:00:02.000Z',
+    type: 'maintenance_window_snap',
+    payment_id: 'pay_rec_soft_01',
+    summary: 'HDFC nocturnal maintenance window 23:30–01:00 cleared',
+  },
+  {
+    ts: '2026-09-29T10:00:03.000Z',
+    type: 'rail_routed',
+    payment_id: 'pay_rec_soft_01',
+    summary: 'Rerouted Card → UPI Autopay on WhatsApp (higher 1-tap conversion)',
+  },
+  {
+    ts: '2026-09-29T10:00:04.000Z',
+    type: 'recovered',
+    payment_id: 'pay_rec_soft_01',
+    summary: 'Payment recovered for ₹1,499 (Cult.fit membership rescued)',
+  },
+]
+
 export function DecisionEventStream({
   events,
   connected,
   className,
   maxHeight = 'max-h-[32rem]',
 }: DecisionEventStreamProps) {
-  // Pre-seed demo micro-decisions if empty
-  const displayEvents: SseEvent[] = events.length > 0 ? events : [
-    {
-      ts: new Date().toISOString(),
-      type: 'classified',
-      payment_id: 'pay_sim_soft_d41',
-      summary: 'Failure Analyzed: insufficient_funds → SOFT classification',
-    },
-    {
-      ts: new Date(Date.now() - 1000).toISOString(),
-      type: 'scheduled',
-      payment_id: 'pay_sim_soft_d41',
-      summary: 'ML 240h scan selected Friday 10:00 AM (Payday snap, 84% score)',
-    },
-    {
-      ts: new Date(Date.now() - 2000).toISOString(),
-      type: 'maintenance_window_snap',
-      payment_id: 'pay_sim_soft_d41',
-      summary: 'HDFC nocturnal maintenance window 23:30–01:00 cleared',
-    },
-    {
-      ts: new Date(Date.now() - 3000).toISOString(),
-      type: 'rail_routed',
-      payment_id: 'pay_sim_soft_d41',
-      summary: 'Rerouted Card → UPI Autopay on WhatsApp (higher 1-tap conversion)',
-    },
-    {
-      ts: new Date(Date.now() - 4000).toISOString(),
-      type: 'recovered',
-      payment_id: 'pay_sim_soft_d41',
-      summary: 'Payment recovered for ₹1,499 (Cult.fit membership rescued)',
-    },
-  ]
+  const displayEvents: SseEvent[] = events.length > 0 ? events : FALLBACK_EVENTS
 
   return (
     <div className={cn('rounded-2xl border border-border bg-surface p-6 shadow-sm space-y-4', className)}>

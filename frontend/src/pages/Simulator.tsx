@@ -1,6 +1,18 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Clapperboard, RotateCcw, Sparkles, CheckCircle2, ShieldAlert, AlertTriangle, Zap, Activity } from 'lucide-react'
+import {
+  Wrench,
+  RotateCcw,
+  Sparkles,
+  CheckCircle2,
+  ShieldAlert,
+  AlertTriangle,
+  Zap,
+  Activity,
+  RefreshCw,
+  BellRing,
+  Send,
+} from 'lucide-react'
 import { api } from '../lib/api'
 import { ago } from '../lib/format'
 import { useSseFeed } from '../lib/useSse'
@@ -17,51 +29,65 @@ import type { ScenarioId, SimulateResult } from '../lib/types'
 const SCENARIOS: { id: ScenarioId; label: string; desc: string; expects: string; icon: React.ComponentType<{ className?: string }> }[] = [
   {
     id: 'soft',
-    label: 'Temporary Failure (Low Balance)',
-    desc: 'Customer card reports insufficient funds. Watch the ML model wait for payday, switch to WhatsApp UPI, and successfully collect ₹1,499.',
-    expects: 'ML snaps to salary day → WhatsApp UPI link sent → recovered',
+    label: 'Transient Decline (Insufficient Funds)',
+    desc: 'Customer instrument reports low balance. ML evaluates 240-hour recovery horizon, snaps to salary liquidity window, and schedules multi-rail fallback.',
+    expects: 'ML snaps to salary day → WhatsApp UPI link provisioned → recovery attempt',
     icon: Sparkles,
   },
   {
+    id: 'cau_refresh',
+    label: 'Card Account Updater (CAU) Token Refresh',
+    desc: 'An expired card on a supported issuing network triggers automated TSP tokenization (Visa VTS / Mastercard MDES) to refresh credential without customer disruption.',
+    expects: 'Network token refreshed → tokenized retry scheduled',
+    icon: RefreshCw,
+  },
+  {
+    id: 'rbi_predebit',
+    label: 'RBI 24h e-Mandate Pre-Debit Alert',
+    desc: 'Generates compliant 24-hour advance pre-debit notifications (PND) with DLT-registered templates per RBI recurring subscription guidelines.',
+    expects: 'RBI 24h pre-debit notice logged & dispatched via DLT template',
+    icon: BellRing,
+  },
+  {
     id: 'hard',
-    label: 'Permanent Failure (Expired Card)',
-    desc: 'An expired card that will never work. The agent blocks retries immediately with 0 attempts, avoiding a ₹8.30 Visa Category-1 fine.',
-    expects: 'Immediately blocked with 0 attempts (Visa safety compliance rule)',
+    label: 'Permanent Terminal Decline (Visa Cat-1)',
+    desc: 'An unrecoverable instrument (closed account, stolen card). The compliance shield halts retries immediately with 0 re-attempts, preventing network penalties.',
+    expects: 'Immediate halt with 0 retries (Visa Category-1 & MC TPE shield)',
     icon: ShieldAlert,
   },
   {
     id: 'downtime',
-    label: 'Bank Outage & Downtime Hold',
-    desc: 'An issuing bank goes offline. The agent safely parks all payments, then auto-drains and retries the moment gateway health restores.',
-    expects: 'Parked safely during outage → auto-drained & retried on recovery',
+    label: 'Bank Infrastructure Core Outage',
+    desc: 'Bank gateway goes offline. recovr safely parks all affected transactions in an infrastructure hold queue, then auto-drains immediately when downtime resolves.',
+    expects: 'Parked in outage hold queue → auto-drained on resolution',
     icon: AlertTriangle,
   },
   {
     id: 'card_testing',
-    label: 'Fraud-Pattern Rapid Burst',
-    desc: 'The same card attempts checkout multiple times in seconds. The agent enforces anti-fraud 24h spacing to prevent card testing flags.',
-    expects: 'Blocked: anti-fraud 24h spacing rule enforced',
+    label: 'Fraud Burst (Card-Testing Defense)',
+    desc: 'Same instrument attempts rapid checkout bursts. recovr enforces 24-hour minimum credential spacing to prevent fraud velocity spikes.',
+    expects: 'Blocked: anti-fraud 24-hour spacing rule enforced',
     icon: ShieldAlert,
   },
   {
     id: 'trajectory',
-    label: 'Escalating Failure Chain',
-    desc: 'A payment fails with worsening error codes across attempts. The agent proactively halts retries rather than spamming the customer.',
+    label: 'Escalating Decline Trajectory',
+    desc: 'A checkout fails with escalating severity across attempts. Proactively halts automated retries rather than fatiguing the customer or incurring issuer penalties.',
     expects: 'Blocked: escalating failure trajectory halted',
     icon: Activity,
   },
   {
     id: 'ev_negative',
-    label: 'Micro-Charge (Negative EV)',
-    desc: 'A ₹0.01 micro-payment. WhatsApp reminder costs ₹0.35. The agent skips recovery because sending a reminder would lose money.',
-    expects: 'Skipped: recovery cost exceeds payment value',
+    label: 'Micro-Charge (Negative Expected Value)',
+    desc: 'A ₹0.01 micro-transaction where channel dispatch costs (₹0.35) exceed expected recovery GMV. The EV gate aborts execution to protect net margin.',
+    expects: 'Skipped: EV = (p * amt) - cost <= 0 logged to audit ledger',
     icon: Zap,
   },
   {
     id: 'payday',
-    label: 'PSU Govt Payday Alignment',
-    desc: 'Government & PSU bank cardholders receive salary on the 7th. The agent snaps retries specifically to the 7th salary credit window.',
-    expects: 'Rescheduled to PSU salary credit date (7th of month)',
+    label: 'Govt & PSU Payday Alignment',
+    desc: 'Government employee cardholders receive salary on the 7th. recovr snaps retries to the 7th salary credit window for PSU issuers (SBI, PNB, BOB).',
+    expects: 'Snapped to PSU salary credit cycle (7th of month)',
     icon: Sparkles,
   },
 ]
@@ -88,8 +114,8 @@ export default function Simulator() {
       sound.success()
       showVerdict({
         type: isHard ? 'blocked' : isEv ? 'skipped' : 'recovered',
-        title: `SIMULATED: ${scenario.toUpperCase()}`,
-        detail: `Created ${createdCount} payments and emitted ${r.events_emitted} decision events through the live AI pipeline.`,
+        title: `EVENT DISPATCHED: ${scenario.toUpperCase()}`,
+        detail: `Dispatched ${createdCount} webhook payloads; ${r.events_emitted} decision events emitted on telemetry stream.`,
       })
     },
   })
@@ -102,8 +128,8 @@ export default function Simulator() {
       sound.chime()
       showVerdict({
         type: 'info',
-        title: 'DEMO RESET',
-        detail: 'All demo payments and audit records have been cleared.',
+        title: 'SANDBOX RESET',
+        detail: 'Sandbox transactions and audit records have been cleared.',
       })
     },
   })
@@ -113,11 +139,11 @@ export default function Simulator() {
       <GlowBackdrop color="copper" />
 
       <PageHeader
-        title="Live Scenario Simulator"
-        sub="Fire realistic failure payloads through the real recovery pipeline. Every scenario triggers real classification, timing, and recovery logic."
+        title="Developer Event Workbench"
+        sub="Dispatch synthetic gateway webhook events and test pipeline behavior against compliance rules, ML timing, and multi-rail routing."
         action={
           <Button
-            variant="danger"
+            variant="default"
             onClick={() => {
               sound.click()
               reset.mutate()
@@ -125,7 +151,7 @@ export default function Simulator() {
             disabled={reset.isPending}
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset Demo DB</span>
+            <span>Clear Sandbox Events</span>
           </Button>
         }
       />
@@ -135,8 +161,8 @@ export default function Simulator() {
           <Card className="p-6">
             <CardTitle>
               <div className="flex items-center gap-2">
-                <Clapperboard className="h-4 w-4 text-copper" />
-                <span>Select Simulation Scenario</span>
+                <Wrench className="h-4 w-4 text-copper" />
+                <span>Select Event Payload Template</span>
               </div>
             </CardTitle>
             <div className="space-y-2.5">
@@ -182,7 +208,7 @@ export default function Simulator() {
             <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-4">
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 text-xs text-text-muted">
-                  <span>Count:</span>
+                  <span>Batch Size:</span>
                   <input
                     type="number"
                     min={1}
@@ -200,7 +226,7 @@ export default function Simulator() {
                     onChange={(e) => setAdvance(e.target.checked)}
                     className="accent-copper rounded"
                   />
-                  <span>Simulate instant clock advance</span>
+                  <span>Auto-advance recovery lifecycle</span>
                 </label>
               </div>
 
@@ -212,8 +238,8 @@ export default function Simulator() {
                 }}
                 disabled={sim.isPending}
               >
-                <Clapperboard className="h-3.5 w-3.5" />
-                <span>{sim.isPending ? 'Simulating…' : `Simulate ${count} payments`}</span>
+                <Send className="h-3.5 w-3.5" />
+                <span>{sim.isPending ? 'Dispatching…' : `Dispatch ${count} Webhook Events`}</span>
               </Button>
             </div>
 
@@ -227,7 +253,7 @@ export default function Simulator() {
               <div className="mt-4 rounded-xl border border-pos/40 bg-pos/10 p-4 space-y-2 animate-in fade-in duration-200">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-pos">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span>✓ {result.created.length} payments processed · {result.events_emitted} decision events emitted</span>
+                  <span>✓ {result.created.length} webhooks ingested · {result.events_emitted} telemetry events emitted</span>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1">
                   {result.created.map((pid) => (
@@ -250,19 +276,19 @@ export default function Simulator() {
             action={
               <LiveBeacon
                 status={connected ? 'active' : 'offline'}
-                label={connected ? 'SSE Bus Live' : 'Disconnected'}
+                label={connected ? 'Telemetry Live' : 'Disconnected'}
                 size="sm"
               />
             }
           >
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-copper" />
-              <span>Live Decision Event Stream</span>
+              <span>Real-Time Decision Stream</span>
             </div>
           </CardTitle>
           {events.length === 0 ? (
             <p className="py-16 text-center text-xs text-text-muted">
-              No events received yet. Click "Simulate" to run payments through the live AI decision pipeline.
+              No events received yet. Dispatch a webhook event to inspect the live autonomous decision pipeline.
             </p>
           ) : (
             <div className="space-y-2 max-h-[38rem] overflow-y-auto pr-1">

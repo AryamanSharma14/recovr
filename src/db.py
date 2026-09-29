@@ -3,8 +3,10 @@ import json
 from src import config
 
 def _conn():
-    conn = sqlite3.connect(config.DB_PATH)
+    conn = sqlite3.connect(config.DB_PATH, timeout=10.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout=5000;")
     return conn
 
 def init_db():
@@ -30,6 +32,8 @@ CREATE TABLE IF NOT EXISTS events (
   attempts INTEGER DEFAULT 0,
   payment_link_id TEXT,
   payment_link_url TEXT,
+  upi_intent_url TEXT,
+  token_refreshed INTEGER DEFAULT 0,
   nudge_channel TEXT,
   nudge_message TEXT,
   nudge_reasoning TEXT,
@@ -71,7 +75,8 @@ CREATE TABLE IF NOT EXISTS downtime_queue (
         have = {r["name"] for r in conn.execute("PRAGMA table_info(events)")}
         for col in ("method TEXT", "international INTEGER DEFAULT 0", "card_network TEXT",
                     "card_type TEXT", "card_issuer TEXT", "card_iin TEXT", "credential TEXT",
-                    "chosen_rail TEXT", "claude_decision TEXT", "claude_reasoning TEXT"):
+                    "chosen_rail TEXT", "claude_decision TEXT", "claude_reasoning TEXT",
+                    "upi_intent_url TEXT", "token_refreshed INTEGER DEFAULT 0"):
             if col.split()[0] not in have:
                 conn.execute(f"ALTER TABLE events ADD COLUMN {col}")
 

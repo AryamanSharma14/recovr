@@ -183,6 +183,8 @@ export type ScenarioId =
   | 'trajectory'
   | 'ev_negative'
   | 'payday'
+  | 'cau_refresh'
+  | 'rbi_predebit'
 
 export interface SimulateResult {
   scenario?: ScenarioId

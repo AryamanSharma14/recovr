@@ -24,7 +24,10 @@ from src.webhook import (
 
 router = APIRouter()
 
-SCENARIOS = ("soft", "hard", "downtime", "card_testing", "trajectory", "ev_negative", "payday")
+SCENARIOS = (
+    "soft", "hard", "downtime", "card_testing", "trajectory",
+    "ev_negative", "payday", "cau_refresh", "rbi_predebit"
+)
 
 # PSU issuers get the govt-payday (7th) window in addition to weekends
 _PSU_DEFAULT = "SBI"
@@ -224,6 +227,72 @@ def _scenario_payday(req: SimulateRequest) -> list[str]:
     return pids
 
 
+def _scenario_cau_refresh(req: SimulateRequest) -> list[str]:
+    """Card Account Updater (CAU) scenario: card_expired on supported bank
+    triggers automatic network token refresh (Visa VTS / Mastercard MDES)."""
+    from src.token_updater import attempt_token_refresh
+    issuer = req.issuer or "HDFC"
+    network = req.network or "Visa"
+    iin = _iin()
+    pids = []
+    for _ in range(max(1, req.count)):
+        pid = _pid("cau")
+        order_id = _order_id()
+        payload = _failed_payload(
+            pid, order_id, req, reason="card_expired", source="bank",
+            issuer=issuer, network=network, iin=iin)
+        _handle_payment_failed(payload)
+
+        # Apply CAU network token update
+        tsp_result = attempt_token_refresh(network, issuer, iin, "card_expired")
+        if tsp_result["refreshed"]:
+            db.update_event(pid, token_refreshed=1, classification="soft",
+                            classify_reason=tsp_result["reason"])
+            db.log_audit(pid, "cau_token_refreshed", tsp_result["reason"])
+            events.push("token_refreshed", pid, {
+                "token": tsp_result["network_token"],
+                "expiry": tsp_result["new_expiry"]
+            })
+            # Schedule tokenized retry
+            from src import scheduler as sc
+            sc.schedule_retry(pid, 24, error_reason="token_refreshed", issuer=issuer, method="card")
+        pids.append(pid)
+
+    if req.advance_hours:
+        for pid in _scheduled_pids(pids):
+            _force_fire(pid)
+    return pids
+
+
+def _scenario_rbi_predebit(req: SimulateRequest) -> list[str]:
+    """RBI e-Mandate framework scenario: 24-hour advance customer notification (PND)
+    dispatched prior to scheduled recurring auto-debit."""
+    from src.dlt import format_dlt_message
+    issuer = req.issuer or "SBI"
+    network = req.network or "RuPay"
+    pids = []
+    for _ in range(max(1, req.count)):
+        pid = _pid("rbi")
+        order_id = _order_id()
+        payload = _failed_payload(
+            pid, order_id, req, reason="mandate_execution_failed", source="bank",
+            issuer=issuer, network=network, iin=_iin(), method="upi")
+        _handle_payment_failed(payload)
+
+        amt_inr = (payload["payload"]["payment"]["entity"]["amount"]) / 100
+        dlt = format_dlt_message(
+            "PRE_DEBIT_NOTIFICATION",
+            amount=f"{amt_inr:.2f}",
+            merchant="Merchant Subscription",
+            date="Tomorrow 10:00 AM",
+            mandate_id=f"man_{pid[-8:]}"
+        )
+        db.log_audit(pid, "rbi_pre_debit_dispatched", f"DLT-ID: {dlt['dlt_template_id']} - {dlt['message']}")
+        events.push("rbi_predebit", pid, {"dlt": dlt})
+        pids.append(pid)
+    return pids
+
+
 _HANDLERS = {
     "soft": _scenario_soft,
     "hard": _scenario_hard,
@@ -232,12 +301,15 @@ _HANDLERS = {
     "trajectory": _scenario_trajectory,
     "ev_negative": _scenario_ev_negative,
     "payday": _scenario_payday,
+    "cau_refresh": _scenario_cau_refresh,
+    "rbi_predebit": _scenario_rbi_predebit,
 }
 
 
 # ── endpoints ─────────────────────────────────────────────────────────────────
 
 @router.post("/simulate")
+@router.post("/api/v1/workbench/dispatch")
 def simulate(req: SimulateRequest):
     if not config.DEMO_MODE:
         return Response(status_code=403, content="Simulator is disabled outside DEMO_MODE")
@@ -250,6 +322,7 @@ def simulate(req: SimulateRequest):
 
 
 @router.post("/simulate/reset")
+@router.post("/api/v1/workbench/reset")
 def simulate_reset(reseed: bool = False):
     if not config.DEMO_MODE:
         return Response(status_code=403, content="Simulator is disabled outside DEMO_MODE")

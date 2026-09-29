@@ -3,7 +3,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
+SANDBOX_MODE = os.getenv("SANDBOX_MODE", os.getenv("DEMO_MODE", "true")).lower() == "true"
+DEMO_MODE = SANDBOX_MODE
+
+RECOVR_UPI_VPA = os.getenv("RECOVR_UPI_VPA", "recovr.checkout@icici")
+RECOVR_MERCHANT_NAME = os.getenv("RECOVR_MERCHANT_NAME", "Merchant Checkout")
 
 DB_PATH = os.getenv("DB_PATH", "recovery.db")
 

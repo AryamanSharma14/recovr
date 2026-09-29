@@ -1,203 +1,266 @@
-# ⚡ Razorpay Autonomous AI Revenue Recovery Agent
+# recovr
 
-> **Predictive Machine Learning • Regulatory Penalty Shield • 1-Tap Multi-Rail UPI Routing • Sub-15ms Real-Time Telemetry**  
-> *Track 3: AI Revenue Recovery — Razorpay AI Buildathon 2026*
+> Autonomous Revenue Recovery Engine and Dunning Middleware for Modern Payment Gateways
 
-[![Python 3.10](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white)](https://python.org)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React 19](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
-[![Pytest Tests](https://img.shields.io/badge/Pytest-108%20Passed-brightgreen)](https://pytest.org)
-[![Vitest Tests](https://img.shields.io/badge/Vitest-13%20Passed-brightgreen)](https://vitest.dev)
-[![Visa & MC Compliant](https://img.shields.io/badge/Regulatory-Visa%20Cat--1%20%7C%20MC%20TPE%20Shield-blue)](https://usa.visa.com)
-[![TRAI Compliant](https://img.shields.io/badge/TRAI-Quiet%20Hours%20%26%20Zero%20Promo-purple)](https://trai.gov.in)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Pytest Suite](https://img.shields.io/badge/Pytest-122%20Passed-brightgreen)](https://pytest.org)
+[![Vitest Suite](https://img.shields.io/badge/Vitest-16%20Passed-brightgreen)](https://vitest.dev)
+[![Regulatory Compliance](https://img.shields.io/badge/Compliance-Visa%20Cat--1%20%7C%20MC%20TPE%20%7C%20TRAI-blue)](https://usa.visa.com)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
-## 🎯 Executive Summary & The Problem
+## Overview
 
-In India alone, checkout drop-offs and failed payment transactions cost merchants over **₹10,000 Crores every single year**. 
+In digital commerce and recurring subscription billing, checkout drop-offs and failed card debits represent substantial lost revenue. Most conventional dunning workflows rely on blind retry loops: they fire automated email alerts immediately after a decline or reattempt charges arbitrarily.
 
-Traditional payment recovery mechanisms are primitive: they fire automated, blind retry SMS or email alerts immediately after a decline. This creates severe friction:
-1. **Customer Fatigue**: Firing an SMS at 11:30 PM on a Friday night leads to instant abandonment and unsubscribe requests.
-2. **Heavy Card Network Penalties**: Visa charges **$0.10 (₹8.30) domestic / $0.25 (₹20.75) cross-border** on illegal retries of Category-1 permanent declines (e.g. expired card, closed account), while Mastercard levies up to **$0.50 (₹41.50)** under Transaction Processing Excellence (TPE) rules.
-3. **TRAI Regulatory Violations**: Mixing promotional offers into transactional alerts or sending alerts during quiet hours (9:00 PM – 9:00 AM IST) breaches TRAI TCCCPR regulations.
-4. **Sub-Economic Reminder Waste**: Gateways spend ₹0.35 on WhatsApp utility messages to recover ₹1.00 micro-orders, burning net margin.
+This naive approach introduces critical operational failures:
+1. **Card Network Penalties**: Visa levies $0.10 (domestic) to $0.25 (cross-border) fines on prohibited retries of Category-1 permanent declines (e.g., closed accounts, invalid numbers). Mastercard charges up to $0.50 under Transaction Processing Excellence (TPE) rules.
+2. **Card-Testing Fraud Flags**: Re-attempting charges on the same instrument within minutes trips gateway risk firewalls and issuer velocity controls.
+3. **Nocturnal Maintenance Traps**: Firing retries during bank core settlement windows (e.g., 23:00–01:30 IST) results in predictable 90%+ failure rates.
+4. **Sub-Economic Communication Spend**: Spending money on paid notifications (e.g., WhatsApp utility messages) to recover micro-transactions where channel cost exceeds expected value burns net margin.
 
-### The Autonomous Paradigm
-Most recovery systems ask: **"When should I retry?"**  
-Our agent asks: **"Am I legally allowed to retry, was this even the customer's fault, what is the mathematical peak of funds availability, and does the expected recovery GMV justify the channel cost?"**
+**`recovr`** is an open-source autonomous revenue recovery engine. It functions as an intelligent middleware sidecar connected to payment gateway webhooks (Razorpay, Stripe, Cashfree, or standard webhook events). It classifies failure root causes, evaluates hour-by-hour liquidity probability across a 240-hour horizon, enforces network compliance boundaries, and dynamically routes recoveries across alternate payment rails (Card to 1-Tap UPI Intent, WhatsApp, SMS, and Email).
 
 ---
 
-## 🏗️ System Architecture
+## Architectural Pipeline
 
 ```mermaid
 flowchart TD
-    A["Payment Failed Event (Razorpay Webhook)"] --> B["Stage 1: Root-Cause Classification"]
+    A["Gateway Webhook Ingestion\n(payment.failed)"] --> B["Stage 1: Root-Cause Classification"]
     
-    B -->|Permanent Decline e.g. Card Expired| C1["Category-1 Compliance Guard"]
-    C1 --> C2["Zero Retries Fired / Direct Fine Savings / Card Update Link"]
+    B -->|Terminal Decline\ne.g. Closed Account| C1["Category-1 Compliance Shield"]
+    C1 --> C2["Zero Retries Fired\nDirect Fine Savings"]
     
-    B -->|Bank Downtime e.g. HDFC Core Outage| D1["Infrastructure Outage Hold Queue"]
-    D1 --> D2["Auto-Drain Immediately on downtime.resolved"]
+    B -->|Card Expired| D1["Card Account Updater (CAU)"]
+    D1 -->|Token Refreshed| D2["Tokenized Re-attempt Scheduled"]
+    D1 -->|Account Closed| C2
     
-    B -->|Soft Recoverable e.g. Low Funds| E1["Stage 2: 240-Hour ML Horizon Scanner"]
+    B -->|Bank Core Outage| E1["Infrastructure Outage Hold Queue"]
+    E1 --> E2["Auto-Drain on downtime.resolved"]
     
-    E1 --> E2["GradientBoosting Temporal Model"]
-    E2 --> F1["Stage 3: Dynamic Snapping Engine"]
-    F1 -->|Payday Heuristic| F2["Align with 1st/7th/15th/Friday Salary Batches"]
-    F1 -->|Maintenance Dead-Zone| F3["Shift away from 23:30 - 01:30 IST Core Settlement"]
+    B -->|Transient Decline\ne.g. Low Balance / Timeout| F1["Stage 2: 240-Hour ML Horizon Scanner"]
     
-    F2 & F3 --> G1["Stage 4: Expected Value (EV) Gate"]
-    G1 -->|EV = p_recover × amount - cost| G2{"EV > 0?"}
-    G2 -->|No| G3["Skipped: Micro-Charge / Uneconomic"]
-    G2 -->|Yes| H1["Stage 5: Dynamic Multi-Rail Router"]
+    F1 --> F2["GradientBoosting Probability Surface"]
+    F2 --> G1["Stage 3: Dynamic Snapping Engine"]
+    G1 -->|Payday Heuristic| G2["Align with 1st / 15th / Friday / 7th PSU Batches"]
+    G1 -->|Maintenance Guard| G3["Shift past nocturnal settlement windows"]
     
-    H1 -->|Card Authorization Decline| H2["1-Tap WhatsApp UPI Intent Link (3s Checkout)"]
-    H1 -->|Card Retry Safe| H3["Scheduled Tokenized Retry"]
+    G2 & G3 --> H1["Stage 4: Expected Value (EV) Gate"]
+    H1 -->|EV = P_rec × Amount - Cost| H2{"EV > 0?"}
+    H2 -->|No| H3["Skipped: Micro-Charge / Uneconomic"]
+    H2 -->|Yes| I1["Stage 5: Dynamic Multi-Rail Router"]
     
-    H2 & H3 --> I1["Stage 6: Real-Time SSE Bus & CFO Audit Trail"]
-    I1 --> J1["Executive Dashboard Telemetry & 100% Explainability"]
+    I1 -->|Card Authorization Fatigue| I2["1-Tap WhatsApp UPI Intent Deep Link"]
+    I1 -->|Card Retry Safe| I3["Scheduled Tokenized Retry"]
+    
+    I2 & I3 --> J1["Stage 6: Real-Time SSE Bus & Immutable Audit Ledger"]
+    J1 --> K1["Executive Operations Console & Decision Trace"]
 ```
 
 ---
 
-## 🚀 Key Innovations & Core Modules
+## Key Capabilities
 
-### 1. Root-Cause Classification (`classifier.py`)
-Incoming payment failure payloads are parsed and triaged in under 2ms:
-- **Soft Recoverable**: Insufficient funds, transient network timeouts, and temporary authorization blocks.
-- **Hard Permanent (Visa Category-1)**: Expired cards, invalid account numbers, and stolen card blocks. Permanently locked from automated retries.
-- **Infrastructure Downtime**: Bank-side outages captured via `payment.downtime.started`. Transactions are held in a downtime queue and automatically drained the millisecond `payment.downtime.resolved` fires.
+### 1. Root-Cause Classification & Category-1 Shield (`src/classifier.py`, `src/compliance.py`)
+- **Category-1 Permanent Decline Block**: Hard decline codes (`card_expired`, `invalid_account`, `card_not_supported`) are immediately halted from automated retries, avoiding direct network penalties ($0.10–$0.25 per transaction).
+- **Rolling Credential Caps**: Enforces strict network thresholds (Visa: 20 attempts per rolling 30 days; Mastercard: 10 per 24 hours and 35 per 30 days).
+- **Anti-Card-Testing Spacing**: Mandates a 24-hour minimum gap between retry attempts on the same card credential to prevent automated card-testing fraud signals.
 
-### 2. 240-Hour ML Temporal Horizon (`scheduler.py`)
-Rather than relying on arbitrary 24-hour delays, our `GradientBoostingClassifier` evaluates hour-by-hour success probability across a **10-day (240-hour) horizon**:
-- **Payday Deposit Cycles**: Encodes non-linear recovery spikes on corporate (1st / 30th) and PSU (7th) salary credit cycles (+32% recovery lift).
-- **Nocturnal Maintenance Dead-Zones**: Identifies bank core settlement windows (e.g. HDFC 23:30–01:30 IST) where retry probability drops to 4%, automatically snapping retries to optimal morning daytime hours.
+### 2. Card Account Updater & Network Tokenization (`src/token_updater.py`)
+- Intercepts expiring instrument failures before terminal classification.
+- Simulates Visa VTS / Mastercard MDES Token Service Provider (TSP) queries. If a fresh network token is on file from the issuing bank, credentials are automatically refreshed (`tok_net_...`) and re-attempted without customer intervention.
 
-### 3. Regulatory Penalty Shield (`compliance.py`)
-- **Visa Category-1 Shield**: Halts 100% of automated retries on permanent declines, avoiding direct fines ($0.10–$0.25 per attempt).
-- **Rolling Credential Caps**: Enforces strict network thresholds (Visa 20 retries / 30 days, Mastercard 10 / 24h + 35 / 30d).
-- **Card-Testing Spacing**: Enforces minimum 24-hour spacing between attempts on the same card credential to prevent automated card-testing fraud detection.
-- **TRAI Quiet-Hours & Anti-Spam Gate**: Restricts outbound customer communications between 9:00 PM and 9:00 AM IST, and strictly enforces purely informational, non-promotional utility templates (TRAI TCCCPR compliant).
+### 3. 240-Hour ML Temporal Horizon (`src/scheduler.py`)
+- Rather than static 24-hour retry timers, a `GradientBoostingClassifier` evaluates recovery probabilities across a **10-day (240-hour) temporal window**.
+- **Liquidity Alignment**: Snaps retries to corporate salary windows (1st, 15th, Fridays) and Indian public sector salary cycles (7th of the month for PSU banks like SBI, PNB, BOB).
+- **Maintenance Dead-Zone Snapping**: Identifies core banking settlement windows (e.g., 23:00–01:30 IST) where retry odds collapse, automatically advancing jobs into daytime clearing hours.
 
-### 4. Dynamic Multi-Rail WhatsApp UPI Routing (`recovery.py`)
-Retrying a failed card checkout on the same card often produces repeated declines and customer friction (>70% drop-off).
-- Our agent detects card authorization fatigue and provisions a dynamic **1-Tap WhatsApp UPI Payment Link**.
-- Customers tap the notification and approve payment inside Google Pay, PhonePe, or Paytm in **under 3 seconds**, bypassing failing card networks completely.
+### 4. Direct 1-Tap UPI Intent & Multi-Rail Routing (`src/recovery.py`, `src/upi_intent.py`)
+- Detects card authorization fatigue and provisions dual recovery rails:
+  - Standard gateway payment links (`https://rzp.io/i/...`) for browser checkout.
+  - Direct NPCI UPI Intent deep links (`upi://pay?pa=...&pn=...&am=...&cu=INR`) enabling instant 1-tap app switching into Google Pay, PhonePe, Paytm, or CRED on mobile devices.
 
-### 5. CFO Unit Economics & Expected Value Gate (`src/dashboard.py`)
-Every automated reminder requires capital (WhatsApp: ₹0.35, SMS: ₹0.15). Before any communication is dispatched, the Expected Value (EV) equation is computed:
-$$\text{EV} = (P_{\text{recovery}} \times \text{Amount}) - \text{Channel Cost}$$
-If $\text{EV} \le 0$ (e.g. ₹1.00 micro-orders with low recovery odds), the reminder is skipped with transparent arithmetic logged in the audit ledger, maintaining a **2,648× ROI** on messaging spend.
+### 5. TRAI DLT Telecom Compliance (`src/dlt.py`)
+- Outbound customer notifications conform to registered Indian telecom Distributed Ledger Technology (DLT) transactional template categories.
+- Quiet-hours enforcement automatically gates non-critical transactional alerts between 21:00 (9:00 PM) and 09:00 (9:00 AM) IST.
 
-### 6. Sub-15ms Real-Time Event Bus (`events.py`)
-An asynchronous Server-Sent Events (SSE) bus streams state transitions, classification audits, and recovery completions to the React frontend in real-time without database polling.
+### 6. CFO Expected Value Gate (`src/recovery.py`, `src/dashboard.py`)
+- Before dispatching any paid communication channel (WhatsApp: ₹0.35, SMS: ₹0.15), the engine computes the Expected Value:
+  $$\text{EV} = (P_{\text{recovery}} \times \text{Amount}) - \text{Channel Cost}$$
+- If $\text{EV} \le 0$ (e.g., micro-orders where reminder fees exceed recovery odds), the attempt is skipped with full arithmetic recorded in the audit log.
 
----
-
-## 📊 Backtest Benchmark: 2,000 Held-Out Transactions
-
-To validate real economic lift without circular bias, we evaluated 2,000 identical transactions across 5 competing industry recovery strategies:
-
-| Strategy | Recovery Rate | Fines Incurred | Fine Savings | Net ROI on Messaging | Compliance Status |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Naive Immediate Retry** | 38.2% | ₹307.10 | ₹0.00 | 412× | ❌ High Penalty Risk |
-| **Fixed 24-Hour Retry** | 45.5% | ₹182.60 | ₹0.00 | 1,240× | ❌ Cat-1 Violations |
-| **Exponential Backoff** | 48.2% | ₹141.10 | ₹0.00 | 1,480× | ⚠️ Maintenance Traps |
-| **⚡ Autonomous AI Agent** | **61.1%** | **₹0.00** | **₹149.40** | **2,648×** | ✅ **100% Compliant** |
-| *Theoretical Perfect Oracle* | *68.4%* | *₹0.00* | *₹149.40* | *2,980×* | *Theoretical Ceiling* |
-
-> **Key Result**: The Autonomous Agent delivers a **+15.6 point recovery advantage** over standard fixed 24h retries while completely eliminating network fines.
+### 7. Developer Event Workbench (`src/simulator.py`, `/workbench`)
+- Full developer workbench for injecting sample webhook payloads across 9 operational scenarios (soft decline, CAU token refresh, RBI pre-debit alert, Category-1 shield, infrastructure outage hold, fraud velocity spacing, trajectory escalation, and negative EV micro-charges).
 
 ---
 
-## 🖥️ Interactive Dashboard & Features
-
-- **Executive Recovery Overview**: Live GMV recovered counter, recovery rate benchmark, and order failure funnel with reactive time-horizon filtering (`Today (Live)`, `Past 24h`, `7D (Baseline)`, `All Time`).
-- **6-Stage Decision Pipeline (`/payment/:id`)**: Deep interactive audit trace detailing Webhook Ingestion $\to$ Regulatory Shield $\to$ ML Horizon Scanner $\to$ Dynamic Snapping $\to$ Multi-Rail Routing $\to$ Smart Nudge Dispatch.
-- **240-Hour Probability Horizon Scrubber**: Visualizes hour-by-hour GradientBoosting probability curves with interactive scrubber highlighting maintenance windows and salary peaks.
-- **Safety Sandbox & Merchant Guardrails (`/policy`)**: Direct fine savings ledger, strategy benchmark table, and enterprise toggles (TRAI quiet hours, Card-to-UPI auto-reroute, minimum EV threshold slider).
-- **Gateway Integration Hub**: Live webhook endpoint, payload schema viewer, copy-paste snippets (Node.js, Python, cURL), and live API ping test (12ms latency).
-- **Agent Thought Terminal (`T` hotkey)**: Live SSE event stream displaying raw payload transformations as checkout events occur.
-- **CFO Executive Board Memo (`E` hotkey)**: One-click print-ready PDF executive summary designed for leadership and finance reviews.
-- **Presenter Controller (`P` hotkey)**: Built-in 5-scenario demo runner allowing hands-free execution across all edge cases.
-
----
-
-## ⚡ Quickstart & Installation
+## Installation & Quickstart
 
 ### Prerequisites
-- **Python 3.10**
-- **Node.js 18+** *(Optional: the production React dashboard is already compiled and served directly by FastAPI)*
+- Python 3.10+
+- Node.js 18+ *(optional: the dashboard SPA is pre-compiled into `src/web/dist` and served directly by FastAPI)*
 
-### 1. Clone & Setup Python Environment
-```powershell
-# Clone the repository
-git clone https://github.com/AryamanSharma14/razorpay-buildathon.git
-cd razorpay-buildathon
+### 1. Clone & Set Up Virtual Environment
 
-# Create and activate Python 3.10 virtual environment
-py -3.10 -m venv .venv
+```bash
+git clone https://github.com/AryamanSharma14/razorpay-buildathon.git recovr
+cd recovr
+
+# Create and activate virtual environment
+python -m venv .venv
+# On Windows:
 .\.venv\Scripts\Activate.ps1
+# On Linux/macOS:
+# source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment (runs in full offline demo mode out-of-the-box)
-copy .env.example .env
+# Install dependencies and recovr CLI in editable mode
+pip install -e .
 ```
 
-### 2. Run the Application
-```powershell
-# Start FastAPI server (serves both API and the interactive dashboard)
-uvicorn src.main:app --reload --port 8000
+### 2. Configure Environment
+
+```bash
+# Copy example configuration
+cp .env.example .env
 ```
-Open **`http://localhost:8000/`** in your browser to access the live dashboard.
+
+`recovr` runs out-of-the-box in **Sandbox Mode** without requiring live payment gateway credentials.
+
+### 3. Start the Server Daemon
+
+```bash
+# Using the recovr CLI:
+recovr serve --port 8000 --reload
+
+# Or directly with uvicorn:
+uvicorn src.main:app --port 8000 --reload
+```
+
+Open **`http://localhost:8000`** in your browser to access the live operations console.
 
 ---
 
-## 🧪 Test Suite & Verification
+## Command-Line Interface (CLI)
 
-The test suite covers full compliance boundaries, recovery algorithms, and end-to-end webhook flows:
+The `recovr` package includes an enterprise command-line interface:
 
-```powershell
-# Run all 108 backend tests
+```bash
+# Start the HTTP server and recovery daemon
+recovr serve --host 0.0.0.0 --port 8000
+
+# Inspect local engine health, database statistics, and scheduler metrics
+recovr status
+
+# Run the comparative multi-policy recovery backtest benchmark
+recovr backtest
+
+# View installed version
+recovr version
+```
+
+---
+
+## Python SDK Usage
+
+You can embed `recovr` directly into an existing Python application (FastAPI, Django, Flask, or Celery task):
+
+```python
+from src.classifier import classify
+from src.token_updater import attempt_token_refresh
+from src.upi_intent import generate_upi_intent_uri
+
+# 1. Classify an incoming failure event
+result = classify(
+    error_source="bank",
+    error_step="payment_authorization",
+    error_reason="insufficient_funds",
+    method="card",
+    issuer="HDFC",
+)
+print(result["type"])    # 'soft'
+print(result["action"])  # 'schedule_retry'
+
+# 2. Check Card Account Updater for expired card
+cau = attempt_token_refresh(
+    card_network="Visa",
+    card_issuer="HDFC",
+    card_iin="424242",
+    error_reason="card_expired",
+)
+if cau["refreshed"]:
+    print(f"Refreshed token: {cau['network_token']}, New expiry: {cau['new_expiry']}")
+
+# 3. Generate direct UPI Intent link
+intent_url = generate_upi_intent_uri(
+    payee_vpa="merchant@icici",
+    payee_name="Acme SaaS",
+    transaction_ref="order_9812",
+    amount_inr=1499.00,
+    note="Subscription Recovery",
+)
+print(intent_url)
+# upi://pay?pa=merchant%40icici&pn=Acme+SaaS&tr=order_9812&am=1499.00&cu=INR&tn=Subscription+Recovery
+```
+
+---
+
+## Comparative Backtest Benchmark
+
+Evaluated across a held-out test split of 2,000 transactions comparing industry recovery strategies:
+
+| Strategy | Recovery Rate | Fine Penalties | Net ROI Multiple | Regulatory Status |
+| :--- | :---: | :---: | :---: | :---: |
+| **Immediate Retry** | 38.2% | ₹307.10 | 412x | High Penalty Risk |
+| **Fixed 24-Hour Delay** | 45.5% | ₹182.60 | 1,240x | Category-1 Violations |
+| **Exponential Backoff** | 48.2% | ₹141.10 | 1,480x | Settlement Window Traps |
+| **recovr Autonomous Engine** | **61.1%** | **₹0.00** | **2,648x** | **100% Compliant** |
+
+---
+
+## Verification & Testing
+
+The test suite covers regulatory boundaries, ML scheduling algorithms, and end-to-end webhook flows:
+
+```bash
+# Run all 122 backend tests
 pytest -q
 
-# Run frontend Vitest tests
+# Run frontend tests
 npm --prefix frontend test
+
+# Build production frontend bundle
+npm --prefix frontend run build
 ```
 
-### Test Coverage Highlights:
-- **`test_compliance.py`**: Hard-decline blockers, Visa/Mastercard rolling caps, and card-testing spacing rules.
-- **`test_recovery.py`**: Multi-rail UPI rerouting, payment link provisioning, and nudge fallbacks.
-- **`test_scheduler.py`**: 240-hour ML inference, payday heuristics, and maintenance dead-zone snapping.
-- **`test_downtime.py`**: Bank outage queue parking and instant drainage on `payment.downtime.resolved`.
-- **`test_ev_spacing.py`**: Mathematical Expected Value thresholds and micro-transaction skipping.
-
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-| Layer | Technologies |
+| Component | Technologies |
 | :--- | :--- |
-| **Backend & API** | Python 3.10, FastAPI, Uvicorn, SQLite, APScheduler, HTTPX |
-| **Machine Learning** | Scikit-Learn (`GradientBoostingClassifier`), Joblib, NumPy, Pandas |
-| **Frontend & UI** | React 19, TypeScript, Vite, Tailwind CSS (Slash Dark Theme), Lucide Icons |
-| **Data Visualization** | Recharts (240h Probability Surfaces, Funnel Charts, ROI Gauges) |
-| **Live Telemetry** | Server-Sent Events (SSE), Web Audio API |
-| **Testing** | Pytest (108 tests), Vitest (13 tests), Playwright E2E |
+| **Backend Core** | Python 3.10+, FastAPI, Uvicorn, SQLite (WAL mode), APScheduler, HTTPX |
+| **Machine Learning** | Scikit-Learn (`GradientBoostingClassifier`), NumPy, Pandas, Joblib |
+| **Frontend Console** | React 19, TypeScript, Vite, Tailwind CSS, TanStack React Query, Lucide Icons |
+| **Data Visualization** | Recharts (240h Probability Surfaces, Recovery Funnels, Unit Economics) |
+| **Telemetry** | Server-Sent Events (SSE) sub-15ms streaming event bus |
+| **Test Matrix** | Pytest (122 tests), Vitest (16 tests) |
 
 ---
 
-## 🔒 Enterprise Security & Privacy Guarantee
+## Security & Privacy Architecture
 
-1. **Zero Customer PII in Machine Learning**: Feature engineering utilizes only de-identified card metadata (BIN/IIN, issuer name, error code, timestamp, amount bucket). Customer names, emails, and phone numbers are never fed into ML training matrices.
-2. **Audit Trail Immutability**: Every retry attempt, skip reason, and regulatory block is cryptographically logged to the `audit_log` database table with full explainability traces.
-3. **Graceful Degradation**: If external LLM or messaging APIs experience latency or outages, the system automatically falls back to deterministic rule sets and templated dispatches with zero dropped webhooks.
+1. **Zero Customer PII in Machine Learning**: Feature matrices strictly utilize de-identified card metadata (BIN/IIN, issuer name, error code, timestamp, amount bucket). Customer names, phone numbers, and email addresses are never passed to ML models.
+2. **Cryptographic Webhook Verification**: Gateway webhooks support HMAC-SHA256 signature verification to prevent spoofing.
+3. **Database Concurrency & Integrity**: SQLite is configured with Write-Ahead Logging (`PRAGMA journal_mode=WAL;`) and a 5,000ms busy timeout, preventing database locks under high ingestion volumes.
+4. **Deterministic Failover**: If external notification or LLM APIs encounter downtime, the engine gracefully falls back to deterministic rule sets and pre-registered DLT utility templates.
 
 ---
 
-*Built with passion for the Razorpay AI Buildathon 2026.*
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE) for details.

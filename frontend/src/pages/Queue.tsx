@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Play, XCircle, Download, AlertTriangle, Layers, Brain, ChevronDown, ChevronRight, Zap, Smartphone } from 'lucide-react'
+import { Play, XCircle, Download, AlertTriangle, Layers, Brain, ChevronDown, ChevronRight, Zap } from 'lucide-react'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { inr, pct, dt, ago } from '../lib/format'
@@ -12,7 +12,6 @@ import { CopyId } from '../components/common/CopyId'
 import { exportCsv } from '../lib/exportCsv'
 import { Modal } from '../components/common/Modal'
 import { DecisionCard } from '../components/common/DecisionCard'
-import { CustomerPhoneModal } from '../components/common/CustomerPhoneModal'
 import { GlowBackdrop } from '../components/reactbits/GlowBackdrop'
 import { LiveBeacon } from '../components/reactbits/LiveBeacon'
 import { sound } from '../lib/sound'
@@ -22,12 +21,6 @@ import type { PendingRetry } from '../lib/types'
 export default function Queue() {
   const qc = useQueryClient()
   const { fromDate, toDate, rangeKey } = useDateRange()
-  const [selectedPhonePayment, setSelectedPhonePayment] = useState<{
-    paymentId: string
-    amountInr: number
-    merchantName: string
-    customerName: string
-  } | null>(null)
 
   const stats = useQuery({
     queryKey: qk.stats(rangeKey),
@@ -227,17 +220,12 @@ export default function Queue() {
                                 variant="default"
                                 onClick={() => {
                                   sound.click()
-                                  setSelectedPhonePayment({
-                                    paymentId: pid,
-                                    amountInr: p.amount_inr,
-                                    merchantName: 'Cult.fit',
-                                    customerName: 'Rahul',
-                                  })
+                                  setSelectedPaymentId(pid)
                                 }}
-                                title="Preview Customer WhatsApp Recovery Nudge with 1-Tap UPI Intent"
+                                title="Inspect ML Decision Breakdown & Explainability Trail"
                               >
-                                <Smartphone className="h-3.5 w-3.5 text-copper" />
-                                <span className="hidden sm:inline">Preview Nudge</span>
+                                <Brain className="h-3.5 w-3.5 text-copper" />
+                                <span className="hidden sm:inline">Decision Trace</span>
                               </Button>
                               <Button
                                 variant="primary"
@@ -427,15 +415,6 @@ export default function Queue() {
           <div className="py-8 text-center text-xs text-neg">Could not load payment decision.</div>
         )}
       </Modal>
-
-      <CustomerPhoneModal
-        isOpen={Boolean(selectedPhonePayment)}
-        onClose={() => setSelectedPhonePayment(null)}
-        paymentId={selectedPhonePayment?.paymentId}
-        amountInr={selectedPhonePayment?.amountInr}
-        merchantName={selectedPhonePayment?.merchantName}
-        customerName={selectedPhonePayment?.customerName}
-      />
     </div>
   )
 }

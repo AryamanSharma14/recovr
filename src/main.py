@@ -7,11 +7,10 @@ from src.simulator import router as simulator_router
 from src.dashboard import router as dashboard_router
 from src import scheduler as sched
 
-app = FastAPI(title="Decline-Aware Recovery Orchestrator")
+from contextlib import asynccontextmanager
 
-
-@app.on_event("startup")
-def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     config.validate()
     db.init_db()
     sched.load_model()
@@ -19,10 +18,14 @@ def startup():
     if config.DEMO_MODE and not os.getenv("PYTEST_CURRENT_TEST"):
         from src.seed import seed_database
         seed_database()
-
-@app.on_event("shutdown")
-def shutdown():
+    yield
     sched.scheduler.shutdown(wait=False)
+
+app = FastAPI(
+    title="recovr — Autonomous Revenue Recovery Engine",
+    version="0.1.0",
+    lifespan=lifespan,
+)
 
 @app.get("/ping")
 def ping():

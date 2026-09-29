@@ -1,11 +1,9 @@
 import { useEffect } from 'react'
 
 export interface HotkeyHandlers {
-  onTogglePresenter?: () => void
   onToggleTerminal?: () => void
-  onToggleCustomerPhone?: () => void
-  onOpenSimulator?: () => void
-  onResetDemo?: () => void
+  onOpenWorkbench?: () => void
+  onResetData?: () => void
   onShowShortcuts?: () => void
   onEscape?: () => void
 }
@@ -31,25 +29,18 @@ export function useHotkeys(handlers: HotkeyHandlers) {
       }
 
       switch (e.key.toLowerCase()) {
-        case 'p':
-          e.preventDefault()
-          handlers.onTogglePresenter?.()
-          break
         case 't':
           e.preventDefault()
           handlers.onToggleTerminal?.()
           break
-        case 'c':
-          e.preventDefault()
-          handlers.onToggleCustomerPhone?.()
-          break
+        case 'w':
         case 'd':
           e.preventDefault()
-          handlers.onOpenSimulator?.()
+          handlers.onOpenWorkbench?.()
           break
         case 'r':
           e.preventDefault()
-          handlers.onResetDemo?.()
+          handlers.onResetData?.()
           break
         case '?':
           e.preventDefault()

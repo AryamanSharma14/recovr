@@ -182,9 +182,25 @@ def run_recovery(payment_id: str):
         db.log_audit(payment_id, "link_error", str(e)[:200])
         return
 
-    db.update_event(payment_id, payment_link_id=link["id"], payment_link_url=link["short_url"])
+    from src.upi_intent import generate_upi_intent_uri
+    amount_inr = (event.get("amount_paise") or 0) / 100
+    upi_intent = generate_upi_intent_uri(
+        payee_vpa=config.RECOVR_UPI_VPA,
+        payee_name=config.RECOVR_MERCHANT_NAME,
+        transaction_ref=payment_id,
+        amount_inr=amount_inr,
+        note=f"Payment recovery for {payment_id}",
+    )
+    event["upi_intent_url"] = upi_intent
+
+    db.update_event(
+        payment_id,
+        payment_link_id=link["id"],
+        payment_link_url=link["short_url"],
+        upi_intent_url=upi_intent,
+    )
     events.push("recovery_attempt", payment_id,
-                {"attempt": attempts, "rail": rail, "link_id": link["id"]})
+                {"attempt": attempts, "rail": rail, "link_id": link["id"], "upi_intent_url": upi_intent})
 
     # Send nudge (imported here to avoid circular at module level)
     try:

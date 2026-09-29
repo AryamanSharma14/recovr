@@ -18,7 +18,8 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'queue', element: <Queue /> },
       { path: 'policy', element: <Policy /> },
-      { path: 'simulator', element: <Simulator /> },
+      { path: 'workbench', element: <Simulator /> },
+      { path: 'simulator', element: <Navigate to="/workbench" replace /> },
 
       // Preserved deep links & secondary pages
       { path: 'analytics', element: <Analytics /> },

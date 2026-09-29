@@ -5,7 +5,7 @@ import {
   Brain,
   ShieldCheck,
   IndianRupee,
-  Clapperboard,
+  Wrench,
   FileText,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -15,11 +15,11 @@ import { LiveBeacon } from '../reactbits/LiveBeacon'
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, exact: true },
   { to: '/queue', label: 'Recovery Queue', icon: Clock },
-  { to: '/analytics', label: 'AI Intelligence', icon: Brain },
-  { to: '/policy', label: 'Safety & Fines', icon: ShieldCheck },
-  { to: '/economics', label: 'ROI & Economics', icon: IndianRupee },
-  { to: '/audit', label: 'Audit & Insights', icon: FileText },
-  { to: '/simulator', label: 'Demo Simulator', icon: Clapperboard, isDemo: true },
+  { to: '/analytics', label: 'ML Intelligence', icon: Brain },
+  { to: '/policy', label: 'Rules & Guardrails', icon: ShieldCheck },
+  { to: '/economics', label: 'Unit Economics', icon: IndianRupee },
+  { to: '/audit', label: 'Audit Trail', icon: FileText },
+  { to: '/workbench', label: 'Event Workbench', icon: Wrench, isTag: 'Sandbox' },
 ]
 
 export function Sidebar() {
@@ -32,7 +32,7 @@ export function Sidebar() {
             R
           </div>
           <div>
-            <div className="font-serif text-sm font-bold text-paper tracking-tight">Razorpay AI</div>
+            <div className="font-serif text-base font-bold text-paper tracking-tight">recovr</div>
             <div className="text-[10px] text-text-muted font-mono uppercase tracking-wider">Recovery Engine</div>
           </div>
         </div>
@@ -63,9 +63,9 @@ export function Sidebar() {
                     )}
                     <Icon className={cn('h-4 w-4 shrink-0 transition-colors', isActive ? 'text-copper' : 'text-text-faint group-hover:text-bone')} />
                     <span>{item.label}</span>
-                    {item.isDemo && (
-                      <span className="ml-auto rounded-full bg-copper/15 border border-copper/30 px-2 py-0.5 text-[9px] font-bold text-copper uppercase">
-                        Demo
+                    {item.isTag && (
+                      <span className="ml-auto rounded-full bg-copper/15 border border-copper/30 px-2 py-0.5 text-[9px] font-bold text-copper uppercase font-mono">
+                        {item.isTag}
                       </span>
                     )}
                   </>
@@ -78,8 +78,8 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-border/60 pt-3 px-2 flex items-center justify-between text-[10px] text-text-faint font-mono">
-        <span>Production v2.4</span>
-        <LiveBeacon status="active" label="Connected" size="sm" />
+        <span>recovr v0.1.0</span>
+        <LiveBeacon status="active" label="Online" size="sm" />
       </div>
     </aside>
   )
