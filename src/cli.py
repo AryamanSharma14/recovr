@@ -3,8 +3,12 @@
 Autonomous Revenue Recovery Engine and Dunning Middleware.
 """
 import argparse
+import os
 import sys
 from datetime import datetime
+
+# Ensure project root is on sys.path when invoked via entrypoint console script
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def cmd_serve(args):
