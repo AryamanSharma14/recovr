@@ -256,7 +256,7 @@ export default function Home() {
             <div className="py-16 text-center space-y-2">
               <div className="text-sm text-text-muted">No activity recorded in this window</div>
               <div className="text-xs text-text-faint">
-                Use the <strong>Demo Controller</strong> below to simulate checkout failures and automatic recoveries.
+                Dispatch test webhooks from the <a href="/workbench" className="text-copper underline font-medium hover:text-paper">Event Workbench</a> to observe real-time autonomous recoveries.
               </div>
             </div>
           ) : (
