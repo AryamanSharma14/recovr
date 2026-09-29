@@ -108,7 +108,7 @@ flowchart TD
 ### 1. Clone & Set Up Virtual Environment
 
 ```bash
-git clone https://github.com/AryamanSharma14/razorpay-buildathon.git recovr
+git clone https://github.com/AryamanSharma14/recovr.git
 cd recovr
 
 # Create and activate virtual environment
